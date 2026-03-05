@@ -2,151 +2,154 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ミニアキネーター</title>
+<title>ハムスター育成ゲーム</title>
+
 <style>
 body{
-    font-family: sans-serif;
-    background:#f5f1e6;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-}
-
-.container{
-    background:white;
-    padding:30px;
-    border-radius:15px;
+    font-family:sans-serif;
+    background:#f5efe6;
     text-align:center;
-    width:320px;
-    box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
 h1{
-    color:#7b5e57;
+    color:#6b4f3a;
 }
 
-#question{
-    margin:20px 0;
-    font-size:18px;
+#game{
+    background:white;
+    width:320px;
+    margin:auto;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+#hamster{
+    font-size:80px;
+}
+
+.status{
+    margin:10px 0;
+    text-align:left;
+}
+
+.bar{
+    height:15px;
+    background:#ddd;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.fill{
+    height:100%;
+    width:50%;
+    background:#ffb347;
 }
 
 button{
-    padding:10px 20px;
-    margin:10px;
+    margin:5px;
+    padding:10px 15px;
     border:none;
-    border-radius:8px;
+    border-radius:10px;
+    background:#f7c59f;
     cursor:pointer;
-    font-size:16px;
+    font-size:14px;
 }
 
-.yes{
-    background:#8ecae6;
+button:hover{
+    background:#f4a261;
 }
 
-.no{
-    background:#ffb4a2;
-}
-
-#result{
-    font-size:20px;
-    margin-top:20px;
-}
-
-.restart{
-    margin-top:15px;
-    background:#cdb4db;
+#message{
+    margin-top:10px;
+    color:#444;
 }
 </style>
 </head>
+
 <body>
 
-<div class="container">
-<h1>ミニアキネーター</h1>
+<h1>🐹 ハムスター育成ゲーム</h1>
 
-<div id="question"></div>
+<div id="game">
 
-<div id="buttons">
-<button class="yes" onclick="answer(true)">はい</button>
-<button class="no" onclick="answer(false)">いいえ</button>
+<div id="hamster">🐹</div>
+
+<div class="status">
+おなか
+<div class="bar"><div id="hunger" class="fill"></div></div>
 </div>
 
-<div id="result"></div>
-<button class="restart" onclick="restart()" style="display:none;">もう一回</button>
+<div class="status">
+元気
+<div class="bar"><div id="energy" class="fill"></div></div>
+</div>
+
+<div class="status">
+幸せ
+<div class="bar"><div id="happy" class="fill"></div></div>
+</div>
+
+<button onclick="feed()">ごはん</button>
+<button onclick="play()">あそぶ</button>
+<button onclick="sleep()">ねる</button>
+
+<div id="message">ハムスターを育てよう！</div>
 
 </div>
 
 <script>
 
-const characters = [
-{
-name:"ピカチュウ",
-answers:[true,true,false]
-},
-{
-name:"ドラえもん",
-answers:[false,true,true]
-},
-{
-name:"マリオ",
-answers:false,true,false
-},
-{
-name:"スヌーピー",
-answers:[false,false,true]
-}
-];
+let hunger = 70
+let energy = 70
+let happy = 70
 
-const questions=[
-"そのキャラクターはゲームに出てきますか？",
-"そのキャラクターは黄色ですか？",
-"そのキャラクターはロボットですか？"
-];
+function update(){
 
-let step=0;
-let candidates=[...characters];
+document.getElementById("hunger").style.width = hunger + "%"
+document.getElementById("energy").style.width = energy + "%"
+document.getElementById("happy").style.width = happy + "%"
 
-const questionEl=document.getElementById("question");
-const resultEl=document.getElementById("result");
-const buttons=document.getElementById("buttons");
-
-showQuestion();
-
-function showQuestion(){
-if(step<questions.length){
-questionEl.textContent=questions[step];
-}else{
-guess();
-}
+if(hunger<=0 || energy<=0 || happy<=0){
+document.getElementById("message").textContent="ハムスターが元気じゃない…！世話してあげて！"
 }
 
-function answer(value){
-
-candidates=candidates.filter(c=>{
-if(!Array.isArray(c.answers)) return false;
-return c.answers[step]===value;
-});
-
-step++;
-showQuestion();
 }
 
-function guess(){
-
-buttons.style.display="none";
-
-if(candidates.length>0){
-resultEl.textContent="あなたが考えたのは「"+candidates[0].name+"」ですね！";
-}else{
-resultEl.textContent="わかりませんでした…";
+function feed(){
+hunger = Math.min(100, hunger+20)
+energy = Math.max(0, energy-5)
+message("ハムスターはごはんを食べた！")
+update()
 }
 
-document.querySelector(".restart").style.display="inline-block";
+function play(){
+happy = Math.min(100, happy+20)
+energy = Math.max(0, energy-10)
+hunger = Math.max(0, hunger-5)
+message("ハムスターと遊んだ！")
+update()
 }
 
-function restart(){
-location.reload();
+function sleep(){
+energy = Math.min(100, energy+25)
+hunger = Math.max(0, hunger-10)
+message("ハムスターはぐっすり寝た！")
+update()
 }
+
+function message(text){
+document.getElementById("message").textContent=text
+}
+
+setInterval(()=>{
+hunger = Math.max(0, hunger-1)
+energy = Math.max(0, energy-1)
+happy = Math.max(0, happy-1)
+update()
+},4000)
+
+update()
 
 </script>
 
