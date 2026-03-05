@@ -86,7 +86,7 @@ function randomPiece(){
     return {
         shape:pieces[id],
         x:4,
-        y:0
+        y:-1
     }
 }
 
@@ -96,7 +96,11 @@ function drawPiece(){
     player.shape.forEach((row,y)=>{
         row.forEach((value,x)=>{
             if(value){
-                drawSquare(player.x+x,player.y+y,colors[value]);
+                let px = player.x + x;
+                let py = player.y + y;
+                if(py >= 0){
+                    drawSquare(px,py,colors[value]);
+                }
             }
         })
     })
@@ -108,7 +112,12 @@ function collision(dx,dy,shape){
             if(shape[y][x]){
                 let nx=player.x+x+dx;
                 let ny=player.y+y+dy;
-                if(nx<0||nx>=COLS||ny>=ROWS||board[ny]?.[nx]){
+
+                if(nx<0||nx>=COLS||ny>=ROWS){
+                    return true;
+                }
+
+                if(ny>=0 && board[ny][nx]){
                     return true;
                 }
             }
@@ -121,7 +130,10 @@ function merge(){
     player.shape.forEach((row,y)=>{
         row.forEach((value,x)=>{
             if(value){
-                board[player.y+y][player.x+x]=value;
+                let py = player.y + y;
+                if(py >= 0){
+                    board[py][player.x+x]=value;
+                }
             }
         })
     })
@@ -185,7 +197,6 @@ setInterval(()=>{
     update();
     gameLoop();
 },500);
-
 </script>
 
 </body>
