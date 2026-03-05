@@ -1,1 +1,192 @@
-a
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Simple Tetris</title>
+<style>
+body{
+    background:#f5f0e6;
+    font-family:sans-serif;
+    text-align:center;
+}
+
+h1{
+    color:#6b5b4d;
+}
+
+canvas{
+    background:#fff;
+    border:4px solid #d8cfc4;
+    margin-top:10px;
+}
+
+#score{
+    font-size:20px;
+    margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<h1>テトリス</h1>
+<canvas id="game" width="240" height="400"></canvas>
+<div id="score">Score: 0</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const ROWS = 20;
+const COLS = 12;
+const SIZE = 20;
+
+let score = 0;
+
+const board = Array.from({length:ROWS},()=>Array(COLS).fill(0));
+
+const colors=[
+null,
+"#FF6B6B",
+"#FFD93D",
+"#6BCB77",
+"#4D96FF",
+"#C77DFF",
+"#FF9F1C",
+"#2EC4B6"
+];
+
+const pieces=[
+[],
+[[1,1,1,1]],
+[[2,2],[2,2]],
+[[0,3,0],[3,3,3]],
+[[4,0,0],[4,4,4]],
+[[0,0,5],[5,5,5]],
+[[6,6,0],[0,6,6]],
+[[0,7,7],[7,7,0]]
+];
+
+function drawSquare(x,y,color){
+    ctx.fillStyle=color;
+    ctx.fillRect(x*SIZE,y*SIZE,SIZE,SIZE);
+    ctx.strokeStyle="#eee";
+    ctx.strokeRect(x*SIZE,y*SIZE,SIZE,SIZE);
+}
+
+function drawBoard(){
+    for(let y=0;y<ROWS;y++){
+        for(let x=0;x<COLS;x++){
+            drawSquare(x,y,colors[board[y][x]]);
+        }
+    }
+}
+
+function randomPiece(){
+    const id=Math.floor(Math.random()*(pieces.length-1))+1;
+    return {
+        shape:pieces[id],
+        x:4,
+        y:0
+    }
+}
+
+let player=randomPiece();
+
+function drawPiece(){
+    player.shape.forEach((row,y)=>{
+        row.forEach((value,x)=>{
+            if(value){
+                drawSquare(player.x+x,player.y+y,colors[value]);
+            }
+        })
+    })
+}
+
+function collision(dx,dy,shape){
+    for(let y=0;y<shape.length;y++){
+        for(let x=0;x<shape[y].length;x++){
+            if(shape[y][x]){
+                let nx=player.x+x+dx;
+                let ny=player.y+y+dy;
+                if(nx<0||nx>=COLS||ny>=ROWS||board[ny]?.[nx]){
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+function merge(){
+    player.shape.forEach((row,y)=>{
+        row.forEach((value,x)=>{
+            if(value){
+                board[player.y+y][player.x+x]=value;
+            }
+        })
+    })
+}
+
+function rotate(shape){
+    return shape[0].map((_,i)=>shape.map(row=>row[i]).reverse());
+}
+
+function clearLines(){
+    outer: for(let y=ROWS-1;y>=0;y--){
+        for(let x=0;x<COLS;x++){
+            if(board[y][x]==0) continue outer;
+        }
+
+        board.splice(y,1);
+        board.unshift(Array(COLS).fill(0));
+        score+=100;
+        document.getElementById("score").innerText="Score: "+score;
+        y++;
+    }
+}
+
+function drop(){
+    if(!collision(0,1,player.shape)){
+        player.y++;
+    }else{
+        merge();
+        clearLines();
+        player=randomPiece();
+    }
+}
+
+document.addEventListener("keydown",e=>{
+    if(e.key==="ArrowLeft"){
+        if(!collision(-1,0,player.shape)) player.x--;
+    }
+    else if(e.key==="ArrowRight"){
+        if(!collision(1,0,player.shape)) player.x++;
+    }
+    else if(e.key==="ArrowDown"){
+        drop();
+    }
+    else if(e.key==="ArrowUp"){
+        const r=rotate(player.shape);
+        if(!collision(0,0,r)) player.shape=r;
+    }
+});
+
+function update(){
+    drop();
+}
+
+function gameLoop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawBoard();
+    drawPiece();
+}
+
+setInterval(()=>{
+    update();
+    gameLoop();
+},500);
+
+</script>
+
+</body>
+</html>
