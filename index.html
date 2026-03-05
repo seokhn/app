@@ -2,201 +2,152 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Simple Tetris</title>
+<title>ミニアキネーター</title>
 <style>
 body{
-    background:#f5f0e6;
-    font-family:sans-serif;
+    font-family: sans-serif;
+    background:#f5f1e6;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container{
+    background:white;
+    padding:30px;
+    border-radius:15px;
     text-align:center;
+    width:320px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
 h1{
-    color:#6b5b4d;
+    color:#7b5e57;
 }
 
-canvas{
-    background:#fff;
-    border:4px solid #d8cfc4;
-    margin-top:10px;
+#question{
+    margin:20px 0;
+    font-size:18px;
 }
 
-#score{
+button{
+    padding:10px 20px;
+    margin:10px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.yes{
+    background:#8ecae6;
+}
+
+.no{
+    background:#ffb4a2;
+}
+
+#result{
     font-size:20px;
-    margin-top:10px;
+    margin-top:20px;
+}
+
+.restart{
+    margin-top:15px;
+    background:#cdb4db;
 }
 </style>
 </head>
 <body>
 
-<h1>テトリス</h1>
-<canvas id="game" width="240" height="400"></canvas>
-<div id="score">Score: 0</div>
+<div class="container">
+<h1>ミニアキネーター</h1>
+
+<div id="question"></div>
+
+<div id="buttons">
+<button class="yes" onclick="answer(true)">はい</button>
+<button class="no" onclick="answer(false)">いいえ</button>
+</div>
+
+<div id="result"></div>
+<button class="restart" onclick="restart()" style="display:none;">もう一回</button>
+
+</div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
 
-const ROWS = 20;
-const COLS = 12;
-const SIZE = 20;
-
-let score = 0;
-
-const board = Array.from({length:ROWS},()=>Array(COLS).fill(0));
-
-const colors=[
-null,
-"#FF6B6B",
-"#FFD93D",
-"#6BCB77",
-"#4D96FF",
-"#C77DFF",
-"#FF9F1C",
-"#2EC4B6"
+const characters = [
+{
+name:"ピカチュウ",
+answers:[true,true,false]
+},
+{
+name:"ドラえもん",
+answers:[false,true,true]
+},
+{
+name:"マリオ",
+answers:false,true,false
+},
+{
+name:"スヌーピー",
+answers:[false,false,true]
+}
 ];
 
-const pieces=[
-[],
-[[1,1,1,1]],
-[[2,2],[2,2]],
-[[0,3,0],[3,3,3]],
-[[4,0,0],[4,4,4]],
-[[0,0,5],[5,5,5]],
-[[6,6,0],[0,6,6]],
-[[0,7,7],[7,7,0]]
+const questions=[
+"そのキャラクターはゲームに出てきますか？",
+"そのキャラクターは黄色ですか？",
+"そのキャラクターはロボットですか？"
 ];
 
-function drawSquare(x,y,color){
-    ctx.fillStyle=color;
-    ctx.fillRect(x*SIZE,y*SIZE,SIZE,SIZE);
-    ctx.strokeStyle="#eee";
-    ctx.strokeRect(x*SIZE,y*SIZE,SIZE,SIZE);
+let step=0;
+let candidates=[...characters];
+
+const questionEl=document.getElementById("question");
+const resultEl=document.getElementById("result");
+const buttons=document.getElementById("buttons");
+
+showQuestion();
+
+function showQuestion(){
+if(step<questions.length){
+questionEl.textContent=questions[step];
+}else{
+guess();
+}
 }
 
-function drawBoard(){
-    for(let y=0;y<ROWS;y++){
-        for(let x=0;x<COLS;x++){
-            drawSquare(x,y,colors[board[y][x]]);
-        }
-    }
-}
+function answer(value){
 
-function randomPiece(){
-    const id=Math.floor(Math.random()*(pieces.length-1))+1;
-    return {
-        shape:pieces[id],
-        x:4,
-        y:-1
-    }
-}
-
-let player=randomPiece();
-
-function drawPiece(){
-    player.shape.forEach((row,y)=>{
-        row.forEach((value,x)=>{
-            if(value){
-                let px = player.x + x;
-                let py = player.y + y;
-                if(py >= 0){
-                    drawSquare(px,py,colors[value]);
-                }
-            }
-        })
-    })
-}
-
-function collision(dx,dy,shape){
-    for(let y=0;y<shape.length;y++){
-        for(let x=0;x<shape[y].length;x++){
-            if(shape[y][x]){
-                let nx=player.x+x+dx;
-                let ny=player.y+y+dy;
-
-                if(nx<0||nx>=COLS||ny>=ROWS){
-                    return true;
-                }
-
-                if(ny>=0 && board[ny][nx]){
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-function merge(){
-    player.shape.forEach((row,y)=>{
-        row.forEach((value,x)=>{
-            if(value){
-                let py = player.y + y;
-                if(py >= 0){
-                    board[py][player.x+x]=value;
-                }
-            }
-        })
-    })
-}
-
-function rotate(shape){
-    return shape[0].map((_,i)=>shape.map(row=>row[i]).reverse());
-}
-
-function clearLines(){
-    outer: for(let y=ROWS-1;y>=0;y--){
-        for(let x=0;x<COLS;x++){
-            if(board[y][x]==0) continue outer;
-        }
-
-        board.splice(y,1);
-        board.unshift(Array(COLS).fill(0));
-        score+=100;
-        document.getElementById("score").innerText="Score: "+score;
-        y++;
-    }
-}
-
-function drop(){
-    if(!collision(0,1,player.shape)){
-        player.y++;
-    }else{
-        merge();
-        clearLines();
-        player=randomPiece();
-    }
-}
-
-document.addEventListener("keydown",e=>{
-    if(e.key==="ArrowLeft"){
-        if(!collision(-1,0,player.shape)) player.x--;
-    }
-    else if(e.key==="ArrowRight"){
-        if(!collision(1,0,player.shape)) player.x++;
-    }
-    else if(e.key==="ArrowDown"){
-        drop();
-    }
-    else if(e.key==="ArrowUp"){
-        const r=rotate(player.shape);
-        if(!collision(0,0,r)) player.shape=r;
-    }
+candidates=candidates.filter(c=>{
+if(!Array.isArray(c.answers)) return false;
+return c.answers[step]===value;
 });
 
-function update(){
-    drop();
+step++;
+showQuestion();
 }
 
-function gameLoop(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    drawBoard();
-    drawPiece();
+function guess(){
+
+buttons.style.display="none";
+
+if(candidates.length>0){
+resultEl.textContent="あなたが考えたのは「"+candidates[0].name+"」ですね！";
+}else{
+resultEl.textContent="わかりませんでした…";
 }
 
-setInterval(()=>{
-    update();
-    gameLoop();
-},500);
+document.querySelector(".restart").style.display="inline-block";
+}
+
+function restart(){
+location.reload();
+}
+
 </script>
 
 </body>
